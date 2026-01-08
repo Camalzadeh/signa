@@ -7,6 +7,7 @@ import org.signa.app.domain.util.DataError
 
 interface SignalRepository {
     fun getSignals(): Flow<List<Signal>>
+    fun getSignal(id: String): Flow<Signal?>
     suspend fun startScanning(): Result<Unit, DataError>
     suspend fun stopScanning()
 }

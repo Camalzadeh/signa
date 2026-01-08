@@ -14,25 +14,48 @@ import kotlinx.coroutines.launch
 import org.signa.app.domain.model.Signal
 import org.signa.app.presentation.theme.GraphColors
 import org.signa.app.presentation.components.GlassyCard
-import org.signa.app.data.service.MockAiService
+import org.signa.app.data.service.getPlatformAiService
 import org.signa.app.domain.util.Result
+
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import org.signa.app.domain.repository.SignalRepository
 
 @Composable
 fun SignalDetailScreen(
-    signal: Signal?,
+    signalId: String?,
+    repository: SignalRepository,
     onBack: () -> Unit
 ) {
-    if (signal == null) {
-        Text("Signal not found", color = GraphColors.AlertRed)
-        return
+    var signal by remember { mutableStateOf<Signal?>(null) }
+    
+    LaunchedEffect(signalId) {
+        if (signalId != null) {
+            repository.getSignal(signalId).collect {
+                signal = it
+            }
+        }
     }
 
-    val aiService = remember { MockAiService() }
+    if (signal == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+             Text("Signal not found or lost...", color = GraphColors.AlertRed)
+             Button(onClick = onBack, modifier = Modifier.padding(top = 16.dp)) {
+                 Text("Back")
+             }
+        }
+        return
+    }
+    
+    val currentSignal = signal!!
+
+    val aiService = getPlatformAiService()
     var analysisResult by remember { mutableStateOf<String?>(null) }
     var isAnalyzing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(scrollState)) {
         Button(onClick = onBack, colors = ButtonDefaults.buttonColors(containerColor = GraphColors.VoidBlack)) {
             Text("< Back", color = GraphColors.CyberNeon)
         }
@@ -40,20 +63,35 @@ fun SignalDetailScreen(
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            signal.name,
+            currentSignal.name,
             style = MaterialTheme.typography.headlineMedium,
-            color = if (signal.isSuspicious) GraphColors.AlertRed else GraphColors.CyberNeon
+            color = if (currentSignal.isSuspicious) GraphColors.AlertRed else GraphColors.CyberNeon
         )
         
-        Text("Type: ${signal.type}", color = GraphColors.StarlightWhite)
-        Text("Strength: ${signal.strength} dBm", color = GraphColors.SignalGreen)
-        Text("Timestamp: ${signal.timestamp}", color = GraphColors.StarlightWhite.copy(alpha = 0.5f))
+        Text("Type: ${currentSignal.type}", color = GraphColors.StarlightWhite)
+        Text("Strength: ${currentSignal.strength} dBm", color = GraphColors.SignalGreen)
+        Text("Timestamp: ${currentSignal.timestamp}", color = GraphColors.StarlightWhite.copy(alpha = 0.5f))
+        
+        if (currentSignal.rawData.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("RAW DATA", color = GraphColors.CyberNeon, style = MaterialTheme.typography.titleMedium)
+            GlassyCard(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    currentSignal.rawData.forEach { (key, value) ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(key, color = GraphColors.StarlightWhite.copy(alpha = 0.7f))
+                            Text(value, color = GraphColors.CyberNeon)
+                        }
+                    }
+                }
+            }
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
         
         Text("WAVEFORM VISUALIZATION (FOURIER)", color = GraphColors.CyberNeon, style = MaterialTheme.typography.titleMedium)
         GlassyCard(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-            SignalWaveformGraph(signal.graphData)
+            SignalWaveformGraph(currentSignal.graphData)
         }
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -64,8 +102,8 @@ fun SignalDetailScreen(
                     isAnalyzing = true
                     scope.launch {
                         // Analyze specific signal
-                        analysisResult = "AI Analysis for ${signal.name}:\n" +
-                                (aiService.analyzeSignals(listOf(signal)) as? Result.Success)?.data.orEmpty()
+                        analysisResult = "AI Analysis for ${currentSignal.name}:\n" +
+                                (aiService.analyzeSignals(listOf(currentSignal)) as? Result.Success)?.data.orEmpty()
                         isAnalyzing = false
                     }
                 }

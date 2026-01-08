@@ -1,12 +1,12 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.buildConfig)
 }
 
 kotlin {
@@ -46,19 +46,25 @@ kotlin {
     }
 }
 
-buildConfig {
-    val properties = java.util.Properties()
-    val localPropertiesFile = project.rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use { properties.load(it) }
+
+val geminiKey: String = try {
+    val properties = Properties()
+    val localProperties = rootProject.file("local.properties")
+    if (localProperties.exists()) {
+        localProperties.inputStream().use { properties.load(it) }
     }
-    
-    buildConfigField("GEMINI_API_KEY", properties.getProperty("GEMINI_API_KEY") ?: "")
+    properties.getProperty("GEMINI_API_KEY") ?: ""
+} catch (e: Exception) {
+    ""
 }
 
 android {
     namespace = "org.signa.app"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId = "org.signa.app"
@@ -66,6 +72,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
     }
     packaging {
         resources {
@@ -82,6 +90,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
+
+
 
 dependencies {
     debugImplementation(compose.uiTooling)
