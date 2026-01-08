@@ -1,4 +1,4 @@
-package org.example.project
+package org.signa.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

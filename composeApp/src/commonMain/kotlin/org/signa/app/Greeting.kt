@@ -1,4 +1,4 @@
-package org.example.project
+package org.signa.app
 
 class Greeting {
     private val platform = getPlatform()

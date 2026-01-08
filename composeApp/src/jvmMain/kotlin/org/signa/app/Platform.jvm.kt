@@ -1,4 +1,4 @@
-package org.example.project
+package org.signa.app
 
 class JVMPlatform: Platform {
     override val name: String = "Java ${System.getProperty("java.version")}"
