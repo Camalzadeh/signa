@@ -1,4 +1,4 @@
-rootProject.name = "KotlinProject"
+rootProject.name = "Signa"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
