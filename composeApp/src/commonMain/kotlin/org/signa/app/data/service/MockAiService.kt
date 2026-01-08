@@ -8,7 +8,7 @@ import org.signa.app.domain.util.DataError
 
 class MockAiService : AiService {
     override suspend fun analyzeSignals(signals: List<Signal>): Result<String, DataError> {
-        delay(1500) // Simulate network delay
+        delay(1500)
         val wifiCount = signals.count { it.type == org.signa.app.domain.model.SignalType.WIFI }
         val strongSignals = signals.count { it.strength > -50 }
         

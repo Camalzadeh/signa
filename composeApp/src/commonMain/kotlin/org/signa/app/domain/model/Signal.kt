@@ -4,7 +4,7 @@ data class Signal(
     val id: String,
     val type: SignalType,
     val name: String,
-    val strength: Int, // dBm or percentage
+    val strength: Int,
     val macAddress: String? = null,
     val frequency: String? = null,
     val timestamp: Long

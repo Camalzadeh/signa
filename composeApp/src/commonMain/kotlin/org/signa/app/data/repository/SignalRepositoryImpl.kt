@@ -16,12 +16,11 @@ class SignalRepositoryImpl(
     }
 
     override suspend fun startScanning(): Result<Unit, DataError> {
-        // In a real app, we might trigger a scan intent or check permissions here.
-        // For now, we assume the scanner flow handles the active scanning loop.
+
         return Result.Success(Unit)
     }
 
     override suspend fun stopScanning() {
-        // Stop scanning logic
+
     }
 }
