@@ -13,7 +13,7 @@ class RealAiService : AiService {
     
     private val generativeModel by lazy {
         GenerativeModel(
-            modelName = "gemini-pro",
+            modelName = "gemini-2.5-flash",
             apiKey = apiKey
         )
     }

@@ -19,6 +19,8 @@ import org.signa.app.domain.util.Result
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import org.signa.app.domain.repository.SignalRepository
 
 @Composable
@@ -89,9 +91,9 @@ fun SignalDetailScreen(
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        Text("WAVEFORM VISUALIZATION (FOURIER)", color = GraphColors.CyberNeon, style = MaterialTheme.typography.titleMedium)
-        GlassyCard(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-            SignalWaveformGraph(currentSignal.graphData)
+        Text("SIGNAL HISTORY & STRENGTH", color = GraphColors.CyberNeon, style = MaterialTheme.typography.titleMedium)
+        GlassyCard(modifier = Modifier.fillMaxWidth().height(250.dp)) {
+            AdvancedSignalGraph(currentSignal.history)
         }
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -132,25 +134,106 @@ fun SignalDetailScreen(
 }
 
 @Composable
-fun SignalWaveformGraph(data: List<Float>) {
-    Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        if (data.isEmpty()) return@Canvas
-        
-        val width = size.width
-        val height = size.height
-        val stepX = width / (data.size - 1)
-        
-        val path = Path()
-        path.moveTo(0f, height * (1 - data[0]))
-        
-        for (i in 1 until data.size) {
-            path.lineTo(i * stepX, height * (1 - data[i]))
+fun AdvancedSignalGraph(history: List<org.signa.app.domain.model.SignalSample>) {
+    // If no history, show placeholder
+    if (history.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+             Text("No Data", color = GraphColors.StarlightWhite.copy(alpha = 0.5f))
+        }
+        return
+    }
+
+    // Interactive State
+    var offsetX by remember { mutableStateOf(0f) }
+    
+    // Convert history to relative time (0 is latest)
+    val sortedHistory = remember(history) { history.sortedBy { it.timestamp } }
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures { _, dragAmount ->
+                    offsetX += dragAmount
+                }
+            }
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+            
+            // Limit offset
+            // internal logic: 1 pixel = ? time? Or just index?
+            // Let's map pixels to indices.
+            // density of points.
+            
+            val totalPoints = sortedHistory.size
+            if (totalPoints < 2) return@Canvas
+            
+            val visibleCount = 100 // How many points to show at once
+            val stepX = width / (visibleCount - 1)
+            
+            // max scroll: (totalPoints - visibleCount) * stepX
+            // We want 0 offset to mean "showing the last visibleCount points".
+            // Dragging right (positive dragAmount) should show older data (move window left).
+            
+            // Just clamp offset to reasonable bounds
+            // let's interpret offsetX as "number of points shifted from end"
+            
+            val shiftIndex = (-offsetX / stepX).toInt().coerceIn(0, (totalPoints - visibleCount).coerceAtLeast(0))
+            
+            // Slice the history window
+            val startIndex = (totalPoints - visibleCount - shiftIndex).coerceAtLeast(0)
+            val endIndex = (startIndex + visibleCount).coerceAtMost(totalPoints)
+            
+            val visiblePoints = sortedHistory.subList(startIndex, endIndex)
+            
+            val maxStrength = -30f
+            val minStrength = -100f
+            
+            val path = Path()
+            
+            visiblePoints.forEachIndexed { index, sample ->
+                val normalizedY = ((sample.strength - minStrength) / (maxStrength - minStrength)).coerceIn(0f, 1f)
+                val x = index * stepX
+                val y = height * (1 - normalizedY)
+                
+                if (index == 0) {
+                    path.moveTo(x, y)
+                } else {
+                    path.lineTo(x, y)
+                }
+                
+                // Draw dots for interaction?
+                drawCircle(
+                    color = GraphColors.CyberNeon,
+                    radius = 2.dp.toPx(),
+                    center = androidx.compose.ui.geometry.Offset(x, y)
+                )
+            }
+            
+            drawPath(
+                path = path,
+                color = GraphColors.CyberNeon,
+                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+            )
+            
+            // Grid
+            drawLine(
+                 color = GraphColors.StarlightWhite.copy(alpha = 0.1f),
+                 start = androidx.compose.ui.geometry.Offset(0f, height * 0.5f),
+                 end = androidx.compose.ui.geometry.Offset(width, height * 0.5f),
+                 strokeWidth = 1.dp.toPx()
+            )
         }
         
-        drawPath(
-            path = path,
-            color = GraphColors.CyberNeon,
-            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+        // Overlay info
+        Text(
+            text = "History: ${sortedHistory.size} pts | Drag to scroll",
+            color = GraphColors.StarlightWhite.copy(alpha = 0.5f),
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.align(Alignment.TopEnd)
         )
     }
 }

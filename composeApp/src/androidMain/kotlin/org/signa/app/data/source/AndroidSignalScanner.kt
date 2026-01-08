@@ -78,10 +78,13 @@ class AndroidSignalScanner(
                 strength = scanResult.level,
                 macAddress = scanResult.BSSID,
                 frequency = "${scanResult.frequency} MHz",
-                timestamp = System.currentTimeMillis(), // Real-time timestamp
+                timestamp = System.currentTimeMillis(),
+                firstSeen = System.currentTimeMillis(),
+                lastSeen = System.currentTimeMillis(),
                 isSuspicious = isSuspicious,
                 // Generate dynamic graph data based on strength and timestamp to simulate wave
                 graphData = generateGraphData(scanResult.BSSID, scanResult.level),
+                history = listOf(org.signa.app.domain.model.SignalSample(System.currentTimeMillis(), scanResult.level)),
                 rawData = mapOf(
                     "BSSID" to scanResult.BSSID,
                     "Capabilities" to scanResult.capabilities,
