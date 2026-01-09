@@ -2,109 +2,171 @@ package org.signa.app.data.source
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+import android.content.*
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
-import android.os.Build
+import android.telephony.*
 import androidx.core.app.ActivityCompat
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.launch
-import org.signa.app.domain.model.Signal
-import org.signa.app.domain.model.SignalType
+import org.signa.app.domain.model.*
 
 class AndroidSignalScanner(
     private val context: Context
 ) : SignalScanner {
 
     private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    private val bluetoothAdapter: BluetoothAdapter? = (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+    private val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
     @SuppressLint("MissingPermission")
     override fun startScanning(): Flow<List<Signal>> = callbackFlow {
+        val signalsMap = mutableMapOf<String, Signal>()
+
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) {
-                    val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
-                    if (success) {
-                        trySend(getWifiSignals())
-                    } else {
-                        // Keep sending old data or maybe just log?
-                        trySend(getWifiSignals())
+                when (intent?.action) {
+                    WifiManager.SCAN_RESULTS_AVAILABLE_ACTION -> {
+                        getWifiSignals().forEach { signalsMap[it.id] = it }
+                    }
+                    BluetoothDevice.ACTION_FOUND -> {
+                        val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                        val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, -100).toInt()
+                        device?.let {
+                            val s = createBluetoothSignal(it, rssi)
+                            signalsMap[s.id] = s
+                        }
                     }
                 }
+                trySend(signalsMap.values.toList().sortedByDescending { it.strength })
             }
         }
 
-        val intentFilter = IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+        val intentFilter = IntentFilter().apply {
+            addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+            addAction(BluetoothDevice.ACTION_FOUND)
+        }
         context.registerReceiver(receiver, intentFilter)
 
-        // Initial scan
-        wifiManager.startScan()
-        
-        // Periodic scan every 10 seconds to avoid heavy throttling but keep updates coming
         val scannerJob = launch {
-            while(true) {
-                delay(10000)
+            while (isActive) {
                 wifiManager.startScan()
+
+                if (bluetoothAdapter?.isDiscovering == true) bluetoothAdapter.cancelDiscovery()
+                bluetoothAdapter?.startDiscovery()
+
+                getCellSignals().forEach { signalsMap[it.id] = it }
+
+                trySend(signalsMap.values.toList().sortedByDescending { it.strength })
+
+                delay(12000)
             }
         }
 
         awaitClose {
             scannerJob.cancel()
             context.unregisterReceiver(receiver)
+            bluetoothAdapter?.cancelDiscovery()
         }
     }
 
     private fun getWifiSignals(): List<Signal> {
+        if (!hasPermissions()) return emptyList()
         if (ActivityCompat.checkSelfPermission(
-                context,
+                this.context,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return emptyList()
-        }
-
-        return wifiManager.scanResults.map { scanResult ->
-            val isSuspicious = scanResult.capabilities.contains("WEP") || scanResult.level > -40 
+        ) return emptyList()
+        return wifiManager.scanResults.map { res ->
             Signal(
-                id = scanResult.BSSID,
+                id = res.BSSID,
                 type = SignalType.WIFI,
-                name = scanResult.SSID.ifBlank { "Hidden Network" },
-                strength = scanResult.level,
-                macAddress = scanResult.BSSID,
-                frequency = "${scanResult.frequency} MHz",
+                name = res.SSID.ifBlank { "Unknown WiFi" },
+                strength = res.level,
+                macAddress = res.BSSID,
+                frequency = "${res.frequency} MHz",
                 timestamp = System.currentTimeMillis(),
-                firstSeen = System.currentTimeMillis(),
-                lastSeen = System.currentTimeMillis(),
-                isSuspicious = isSuspicious,
-                // Generate dynamic graph data based on strength and timestamp to simulate wave
-                graphData = generateGraphData(scanResult.BSSID, scanResult.level),
-                history = listOf(org.signa.app.domain.model.SignalSample(System.currentTimeMillis(), scanResult.level)),
-                rawData = mapOf(
-                    "BSSID" to scanResult.BSSID,
-                    "Capabilities" to scanResult.capabilities,
-                    "Frequency" to scanResult.frequency.toString(),
-                    "Channel Width" to (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) scanResult.channelWidth.toString() else "Unknown")
-                )
+                isSuspicious = res.capabilities.contains("WEP") || res.level > -30,
+                history = listOf(SignalPoint(System.currentTimeMillis(), res.level)),
+                rawData = mapOf("Cap" to res.capabilities, "Freq" to res.frequency.toString())
             )
         }
     }
-    
-    private fun generateGraphData(seed: String, strength: Int): List<Float> {
-        val hash = seed.hashCode()
-        val timeShift = (System.currentTimeMillis() / 100.0).toFloat() // Animated phase shift
-        val amplitude = (100 + strength) / 100f // Normalize strength (-100 to 0) to approx 0..1 scale (rough)
-        
-        return List(50) { index ->
-             // Combine sine waves with time shift for animation
-             val base = kotlin.math.sin((index * 0.2) + timeShift + hash) 
-             // Modulate by amplitude and normalize to 0..1
-             ((base * amplitude * 0.5) + 0.5).toFloat().coerceIn(0f, 1f)
+
+    @SuppressLint("MissingPermission")
+    private fun createBluetoothSignal(device: BluetoothDevice, rssi: Int): Signal {
+        return Signal(
+            id = device.address,
+            type = SignalType.BLUETOOTH,
+            name = device.name ?: "Unknown Bluetooth",
+            strength = rssi,
+            macAddress = device.address,
+            frequency = "2.4 GHz",
+            timestamp = System.currentTimeMillis(),
+            isSuspicious = rssi > -40,
+            history = listOf(SignalPoint(System.currentTimeMillis(), rssi)),
+            rawData = mapOf("Type" to device.type.toString(), "Class" to (device.bluetoothClass?.toString() ?: ""))
+        )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun getCellSignals(): List<Signal> {
+        if (!hasPermissions()) return emptyList()
+        val cellInfos = telephonyManager.allCellInfo ?: return emptyList()
+
+        return cellInfos.map { info ->
+            // ID təyini zamanı 5G-ni yalnız API 29+ üçün yoxlayırıq
+            val id = when {
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && info is CellInfoNr -> {
+                    "5G-${info.hashCode()}"
+                }
+                info is CellInfoLte -> "LTE-${info.cellIdentity.ci}"
+                info is CellInfoGsm -> "GSM-${info.cellIdentity.cid}"
+                else -> "CELL-${info.hashCode()}"
+            }
+
+            val dbm = when {
+                // 5G gücünü yalnız API 29+ cihazlarda oxuyuruq
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && info is CellInfoNr -> {
+                    info.cellSignalStrength.dbm
+                }
+                info is CellInfoLte -> info.cellSignalStrength.dbm
+                info is CellInfoGsm -> info.cellSignalStrength.dbm
+                else -> -110
+            }
+
+            Signal(
+                id = id,
+                type = SignalType.CELLULAR,
+                name = "Cell Tower (${getCellType(info)})",
+                strength = dbm,
+                macAddress = "N/A",
+                frequency = "Mobile Band",
+                timestamp = System.currentTimeMillis(),
+                isSuspicious = false,
+                history = listOf(SignalPoint(System.currentTimeMillis(), dbm)),
+                rawData = mapOf("Registered" to info.isRegistered.toString())
+            )
         }
     }
+
+    private fun getCellType(info: CellInfo): String {
+        return when {
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && info is CellInfoNr -> "5G/NR"
+            info is CellInfoLte -> "4G/LTE"
+            info is CellInfoWcdma -> "3G/WCDMA"
+            info is CellInfoGsm -> "2G/GSM"
+            else -> "Unknown"
+        }
+    }
+
+
+    private fun hasPermissions() = ActivityCompat.checkSelfPermission(
+        context, Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
 }

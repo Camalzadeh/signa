@@ -1,16 +1,17 @@
 package org.signa.app.presentation.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.signa.app.presentation.theme.GraphColors
 
 @Composable
@@ -18,20 +19,36 @@ fun AppFooter(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Created by Jamalzadeh",
-            style = MaterialTheme.typography.labelMedium,
-            color = GraphColors.StarlightWhite.copy(alpha = 0.7f)
+        HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .padding(bottom = 12.dp),
+            thickness = 0.5.dp,
+            color = GraphColors.CyberNeon.copy(alpha = 0.3f)
         )
-        Text(
-            text = "Organization: Graph",
-            style = MaterialTheme.typography.labelSmall,
-            color = GraphColors.CyberNeon.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center
-        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .background(GraphColors.SignalGreen, shape = androidx.compose.foundation.shape.CircleShape)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = "SIGNA SYSTEM ACTIVE",
+                color = GraphColors.CyberNeon,
+                style = MaterialTheme.typography.labelSmall,
+                letterSpacing = 2.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }

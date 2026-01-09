@@ -7,6 +7,9 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.google.ksp)
+    alias(libs.plugins.buildConfig)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -24,6 +27,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.generativeai)
             implementation(libs.accompanist.permissions)
+            implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -35,13 +39,30 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.navigation.compose)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.sqlite.bundled)
+
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.sqlite.bundled)
+
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.markdown.renderer)
+
+            implementation(compose.materialIconsExtended)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.ktor.client.cio)
         }
     }
 }
@@ -56,6 +77,17 @@ val geminiKey: String = try {
     properties.getProperty("GEMINI_API_KEY") ?: ""
 } catch (e: Exception) {
     ""
+}
+
+dependencies {
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspJvm", libs.androidx.room.compiler)
+    debugImplementation(compose.uiTooling)
+}
+
+buildConfig {
+    packageName("org.signa.app")
+    buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
 }
 
 android {
@@ -93,7 +125,9 @@ android {
 
 
 
+
 dependencies {
+    implementation(libs.generativeai)
     debugImplementation(compose.uiTooling)
 }
 
@@ -108,3 +142,7 @@ compose.desktop {
         }
     }
 }
+
+//room {
+//    schemaDirectory("$projectDir/schemas")
+//}

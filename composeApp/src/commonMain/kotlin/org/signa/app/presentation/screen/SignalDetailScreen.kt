@@ -1,26 +1,33 @@
 package org.signa.app.presentation.screen
 
+import AiResultView
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.Offset
+
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
+
+
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.signa.app.domain.model.Signal
 import org.signa.app.presentation.theme.GraphColors
 import org.signa.app.presentation.components.GlassyCard
-import org.signa.app.data.service.getPlatformAiService
+import org.signa.app.data.service.getAiService
 import org.signa.app.domain.util.Result
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import org.signa.app.domain.repository.SignalRepository
 
 @Composable
@@ -41,7 +48,7 @@ fun SignalDetailScreen(
 
     if (signal == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-             Text("Signal not found or lost...", color = GraphColors.AlertRed)
+             Text("org.signa.app.domain.model.Signal not found or lost...", color = GraphColors.AlertRed)
              Button(onClick = onBack, modifier = Modifier.padding(top = 16.dp)) {
                  Text("Back")
              }
@@ -51,7 +58,7 @@ fun SignalDetailScreen(
     
     val currentSignal = signal!!
 
-    val aiService = getPlatformAiService()
+    val aiService = getAiService()
     var analysisResult by remember { mutableStateOf<String?>(null) }
     var isAnalyzing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -123,10 +130,8 @@ fun SignalDetailScreen(
         if (analysisResult != null) {
             Spacer(modifier = Modifier.height(16.dp))
             GlassyCard(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                Text(
-                    analysisResult!!,
-                    color = GraphColors.StarlightWhite,
-                    modifier = Modifier.padding(16.dp)
+                AiResultView(
+                    content = analysisResult!!,
                 )
             }
         }
@@ -134,106 +139,129 @@ fun SignalDetailScreen(
 }
 
 @Composable
-fun AdvancedSignalGraph(history: List<org.signa.app.domain.model.SignalSample>) {
-    // If no history, show placeholder
+fun AdvancedSignalGraph(history: List<org.signa.app.domain.model.SignalPoint>) {
     if (history.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-             Text("No Data", color = GraphColors.StarlightWhite.copy(alpha = 0.5f))
+            Text("No Data", color = GraphColors.StarlightWhite.copy(alpha = 0.5f))
         }
         return
     }
 
-    // Interactive State
-    var offsetX by remember { mutableStateOf(0f) }
-    
-    // Convert history to relative time (0 is latest)
     val sortedHistory = remember(history) { history.sortedBy { it.timestamp } }
-    
-    Box(
+
+    var scrollOffset by remember { mutableStateOf(0f) }
+    val scale by remember { mutableStateOf(1f) }
+    var selectedPointIndex by remember { mutableStateOf<Int?>(null) }
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures { _, dragAmount ->
-                    offsetX += dragAmount
+            .pointerInput(sortedHistory) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    scrollOffset += dragAmount.x
+                }
+            }
+            .pointerInput(sortedHistory) {
+                detectTapGestures { offset ->
+                    // Toxunulan nöqtəyə ən yaxın indeksi tapmaq
+                    val width = size.width.toFloat()
+                    val pointSpacing = (width / 20f) * scale
+                    val totalWidth = (sortedHistory.size - 1) * pointSpacing
+                    val startX = (width - totalWidth) + scrollOffset
+
+                    val index = ((offset.x - startX) / pointSpacing).toInt()
+                    if (index in sortedHistory.indices) {
+                        selectedPointIndex = index
+                    }
                 }
             }
     ) {
+        val width = constraints.maxWidth.toFloat()
+        val height = constraints.maxHeight.toFloat()
+
+        val pointSpacing = (width / 20f) * scale
+        val maxStrength = -30f
+        val minStrength = -100f
+
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val width = size.width
-            val height = size.height
-            
-            // Limit offset
-            // internal logic: 1 pixel = ? time? Or just index?
-            // Let's map pixels to indices.
-            // density of points.
-            
-            val totalPoints = sortedHistory.size
-            if (totalPoints < 2) return@Canvas
-            
-            val visibleCount = 100 // How many points to show at once
-            val stepX = width / (visibleCount - 1)
-            
-            // max scroll: (totalPoints - visibleCount) * stepX
-            // We want 0 offset to mean "showing the last visibleCount points".
-            // Dragging right (positive dragAmount) should show older data (move window left).
-            
-            // Just clamp offset to reasonable bounds
-            // let's interpret offsetX as "number of points shifted from end"
-            
-            val shiftIndex = (-offsetX / stepX).toInt().coerceIn(0, (totalPoints - visibleCount).coerceAtLeast(0))
-            
-            // Slice the history window
-            val startIndex = (totalPoints - visibleCount - shiftIndex).coerceAtLeast(0)
-            val endIndex = (startIndex + visibleCount).coerceAtMost(totalPoints)
-            
-            val visiblePoints = sortedHistory.subList(startIndex, endIndex)
-            
-            val maxStrength = -30f
-            val minStrength = -100f
-            
-            val path = Path()
-            
-            visiblePoints.forEachIndexed { index, sample ->
-                val normalizedY = ((sample.strength - minStrength) / (maxStrength - minStrength)).coerceIn(0f, 1f)
-                val x = index * stepX
-                val y = height * (1 - normalizedY)
-                
-                if (index == 0) {
-                    path.moveTo(x, y)
-                } else {
-                    path.lineTo(x, y)
-                }
-                
-                // Draw dots for interaction?
-                drawCircle(
-                    color = GraphColors.CyberNeon,
-                    radius = 2.dp.toPx(),
-                    center = androidx.compose.ui.geometry.Offset(x, y)
+            val gridStep = height / 4
+            for (i in 0..4) {
+                drawLine(
+                    color = GraphColors.StarlightWhite.copy(alpha = 0.05f),
+                    start = Offset(0f, i * gridStep),
+                    end = Offset(width, i * gridStep),
+                    strokeWidth = 1.dp.toPx()
                 )
             }
-            
+
+            val totalWidth = (sortedHistory.size - 1) * pointSpacing
+            val startX = (width - totalWidth) + scrollOffset
+
+            val path = Path()
+            val pointOffsets = mutableListOf<Offset>()
+
+            sortedHistory.forEachIndexed { index, sample ->
+                val x = startX + (index * pointSpacing)
+                val normalizedY = ((sample.strength - minStrength) / (maxStrength - minStrength)).coerceIn(0f, 1f)
+                val y = height * (1 - normalizedY)
+
+                val currentOffset = Offset(x, y)
+                pointOffsets.add(currentOffset)
+
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+
             drawPath(
                 path = path,
                 color = GraphColors.CyberNeon,
-                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
             )
-            
-            // Grid
-            drawLine(
-                 color = GraphColors.StarlightWhite.copy(alpha = 0.1f),
-                 start = androidx.compose.ui.geometry.Offset(0f, height * 0.5f),
-                 end = androidx.compose.ui.geometry.Offset(width, height * 0.5f),
-                 strokeWidth = 1.dp.toPx()
-            )
+
+            // Nöqtələri və seçilmiş nöqtəni çək
+            pointOffsets.forEachIndexed { index, offset ->
+                if (offset.x in 0f..width) { // Yalnız ekranda olanları çək
+                    val isSelected = selectedPointIndex == index
+
+                    drawCircle(
+                        color = if (isSelected) GraphColors.SignalGreen else GraphColors.CyberNeon.copy(alpha = 0.5f),
+                        radius = if (isSelected) 6.dp.toPx() else 2.dp.toPx(),
+                        center = offset
+                    )
+
+                    if (isSelected) {
+                        // Seçilmiş nöqtə üçün şaquli xətt
+                        drawLine(
+                            color = GraphColors.SignalGreen.copy(alpha = 0.3f),
+                            start = Offset(offset.x, 0f),
+                            end = Offset(offset.x, height),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+                }
+            }
         }
-        
-        // Overlay info
+
+        selectedPointIndex?.let { index ->
+            val p = sortedHistory[index]
+            Card(
+                colors = CardDefaults.cardColors(containerColor = GraphColors.DeepSpaceBlack.copy(alpha = 0.8f)),
+                modifier = Modifier.align(Alignment.TopCenter).padding(8.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, GraphColors.CyberNeon)
+            ) {
+                Column(modifier = Modifier.padding(8.dp)) {
+                    Text("Strength: ${p.strength} dBm", color = GraphColors.SignalGreen, style = MaterialTheme.typography.labelMedium)
+                    Text("Time: ${p.timestamp}", color = GraphColors.StarlightWhite, style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+
         Text(
-            text = "History: ${sortedHistory.size} pts | Drag to scroll",
-            color = GraphColors.StarlightWhite.copy(alpha = 0.5f),
+            "DRAG TO EXPLORE | TAP TO INSPECT",
+            color = GraphColors.CyberNeon.copy(alpha = 0.6f),
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.align(Alignment.TopEnd)
+            modifier = Modifier.align(Alignment.BottomStart).padding(4.dp)
         )
     }
 }

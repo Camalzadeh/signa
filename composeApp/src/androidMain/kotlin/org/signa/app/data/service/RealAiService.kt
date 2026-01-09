@@ -8,7 +8,6 @@ import org.signa.app.domain.util.DataError
 import org.signa.app.domain.util.Result
 
 class RealAiService : AiService {
-    // Requires GEMINI_API_KEY in local.properties
     private val apiKey = BuildConfig.GEMINI_API_KEY
     
     private val generativeModel by lazy {
@@ -26,7 +25,7 @@ class RealAiService : AiService {
         return try {
             val signalDescription = signals.joinToString("\n") { signal ->
                 """
-                - Signal: ${signal.name} (${signal.type})
+                - org.signa.app.domain.model.Signal: ${signal.name} (${signal.type})
                   Strength: ${signal.strength} dBm
                   Frequency: ${signal.frequency ?: "Unknown"}
                   Suspicious: ${signal.isSuspicious}
