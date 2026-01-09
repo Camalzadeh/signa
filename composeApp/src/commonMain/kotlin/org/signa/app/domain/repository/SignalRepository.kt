@@ -2,12 +2,10 @@ package org.signa.app.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.signa.app.domain.model.Signal
-import org.signa.app.domain.util.Result
-import org.signa.app.domain.util.DataError
 
 interface SignalRepository {
-    fun getSignals(): Flow<List<Signal>>
+    fun getAllSignals(): Flow<List<Signal>>
+    suspend fun scanAndSaveSignals()
+    suspend fun clearAllSignals()
     fun getSignal(id: String): Flow<Signal?>
-    suspend fun startScanning(): Result<Unit, DataError>
-    suspend fun stopScanning()
 }

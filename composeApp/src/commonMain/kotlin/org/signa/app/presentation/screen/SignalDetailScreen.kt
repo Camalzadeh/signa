@@ -110,7 +110,6 @@ fun SignalDetailScreen(
                 if (!isAnalyzing) {
                     isAnalyzing = true
                     scope.launch {
-                        // Analyze specific signal
                         analysisResult = "AI Analysis for ${currentSignal.name}:\n" +
                                 (aiService.analyzeSignals(listOf(currentSignal)) as? Result.Success)?.data.orEmpty()
                         isAnalyzing = false
@@ -165,7 +164,6 @@ fun AdvancedSignalGraph(history: List<org.signa.app.domain.model.SignalPoint>) {
             }
             .pointerInput(sortedHistory) {
                 detectTapGestures { offset ->
-                    // Toxunulan nöqtəyə ən yaxın indeksi tapmaq
                     val width = size.width.toFloat()
                     val pointSpacing = (width / 20f) * scale
                     val totalWidth = (sortedHistory.size - 1) * pointSpacing
@@ -219,7 +217,6 @@ fun AdvancedSignalGraph(history: List<org.signa.app.domain.model.SignalPoint>) {
                 style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
             )
 
-            // Nöqtələri və seçilmiş nöqtəni çək
             pointOffsets.forEachIndexed { index, offset ->
                 if (offset.x in 0f..width) { // Yalnız ekranda olanları çək
                     val isSelected = selectedPointIndex == index

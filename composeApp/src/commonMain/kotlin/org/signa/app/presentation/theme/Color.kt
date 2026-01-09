@@ -10,7 +10,4 @@ object GraphColors {
     val SignalGreen = Color(0xFF00C853)
     val AlertRed = Color(0xFFFF2D55)
     val StarlightWhite = Color(0xFFEAEAEA)
-    val GlassSurface = Color(0x2DFFFFFF)
-    
-
 }

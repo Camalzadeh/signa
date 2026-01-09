@@ -26,14 +26,13 @@ fun SignalListScreen(
     onSignalClick: (Signal) -> Unit
 ) {
     var filterType by remember { mutableStateOf<String?>(null) }
-    var sortBy by remember { mutableStateOf("Priority") } // Default olaraq Prioritet siralama
+    var sortBy by remember { mutableStateOf("Priority") }
 
-    // Ağıllı Sıralama Məntiqi
     val processedSignals = remember(signals, filterType, sortBy) {
         signals.filter { filterType == null || it.type.name == filterType }
             .sortedWith(
-                compareByDescending<Signal> { it.isSuspicious } // 1. Təhlükəli olanlar ən başa
-                    .thenByDescending { it.strength > -50 }      // 2. Güclü/Aktiv olanlar
+                compareByDescending<Signal> { it.isSuspicious }
+                    .thenByDescending { it.strength > -50 }
                     .thenByDescending {
                         when (sortBy) {
                             "Strength" -> it.strength.toFloat()
@@ -45,7 +44,6 @@ fun SignalListScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Başlıq Bölməsi
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -65,7 +63,6 @@ fun SignalListScreen(
                 )
             }
 
-            // Təhlükə sayını göstərən kiçik badge
             val suspiciousCount = signals.count { it.isSuspicious }
             if (suspiciousCount > 0) {
                 Surface(
@@ -86,7 +83,6 @@ fun SignalListScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Filtrlər və Sıralama (Scrollable Row)
         Text("FILTERS & SORTING", color = GraphColors.StarlightWhite.copy(alpha = 0.4f), style = MaterialTheme.typography.labelSmall)
         Row(
             modifier = Modifier
@@ -107,7 +103,6 @@ fun SignalListScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Siqnal Siyahısı
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.weight(1f)
@@ -121,7 +116,6 @@ fun SignalListScreen(
 
 @Composable
 fun SignalListItem(signal: Signal, onClick: () -> Unit) {
-    // Border rəngini və kölgəni vəziyyətə görə təyin edirik
     val borderColor = when {
         signal.isSuspicious -> GraphColors.AlertRed
         signal.strength > -50 -> GraphColors.SignalGreen
@@ -178,7 +172,6 @@ fun SignalListItem(signal: Signal, onClick: () -> Unit) {
                         color = if (signal.strength > -60) GraphColors.SignalGreen else Color.White,
                         fontWeight = FontWeight.Black
                     )
-                    // Kiçik vizual bar
                     Box(
                         modifier = Modifier
                             .width(60.dp)

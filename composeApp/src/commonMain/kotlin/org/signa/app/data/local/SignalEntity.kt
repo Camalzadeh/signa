@@ -6,9 +6,16 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "signals")
 data class SignalEntity(
     @PrimaryKey val id: String,
-    val name: String,
     val type: String,
+    val name: String,
     val strength: Int,
+    val macAddress: String?,
+    val frequency: String?,
     val timestamp: Long,
-    val isSuspicious: Boolean
+    val firstSeen: Long,
+    val lastSeen: Long,
+    val isSuspicious: Boolean,
+    val graphDataJson: String,
+    val historyJson: String,
+    val rawDataJson: String
 )

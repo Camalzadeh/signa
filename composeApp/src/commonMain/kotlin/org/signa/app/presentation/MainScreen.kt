@@ -28,10 +28,10 @@ import org.signa.app.presentation.screen.SignalDetailScreen
 import org.signa.app.presentation.screen.SignalListScreen
 import org.signa.app.presentation.theme.GraphColors
 import org.signa.app.data.local.getDatabaseBuilder
+import org.signa.app.presentation.viewmodel.SignalViewModel
 
 @Composable
 expect fun PermissionGate(onPermissionsGranted: @Composable () -> Unit)
-
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
@@ -39,16 +39,21 @@ fun MainScreen() {
     val database = remember {
         getDatabaseBuilder()
             .setDriver(BundledSQLiteDriver())
+            .fallbackToDestructiveMigration(dropAllTables = false)
             .build()
     }
 
     val scanner = getPlatformScanner()
+
     val repository = remember(scanner, database) {
-        SignalRepositoryImpl(scanner, database.signalDao())
+        SignalRepositoryImpl(database.signalDao(), scanner)
     }
 
-    // 2. Siqnalları bazadan real-time izləyirik
-    val signals by repository.getSignals().collectAsState(initial = emptyList())
+    val viewModel: SignalViewModel = androidx.lifecycle.viewmodel.compose.viewModel {
+        SignalViewModel(repository)
+    }
+
+    val signals by viewModel.signals.collectAsState()
 
     PermissionGate {
         Scaffold(
@@ -59,14 +64,14 @@ fun MainScreen() {
                 ) {
                     val items = listOf(
                         NavigationItem("Home", Route.Home.route, Icons.Default.Home),
-                        NavigationItem("Signals", Route.Signals.route,
-                            Icons.AutoMirrored.Filled.List
-                        ),
+                        NavigationItem("Signals", Route.Signals.route, Icons.AutoMirrored.Filled.List),
                         NavigationItem("Settings", Route.Settings.route, Icons.Default.Settings)
                     )
 
                     items.forEach { item ->
-                        val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+                        val currentBackStack by navController.currentBackStackEntryAsState()
+                        val currentRoute = currentBackStack?.destination?.route
+
                         NavigationBarItem(
                             icon = { Icon(item.icon, contentDescription = item.label) },
                             label = { Text(item.label) },
@@ -77,12 +82,7 @@ fun MainScreen() {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = GraphColors.CyberNeon,
-                                unselectedIconColor = GraphColors.StarlightWhite.copy(alpha = 0.5f),
-                                indicatorColor = GraphColors.NebulaPurple.copy(alpha = 0.3f)
-                            )
+                            }
                         )
                     }
                 }
@@ -99,15 +99,16 @@ fun MainScreen() {
                     .padding(innerPadding)
             ) {
                 NavHost(navController = navController, startDestination = Route.Home.route) {
-                    composable(Route.Home.route) { HomeScreen(signals) }
+                    composable(Route.Home.route) {
+                        HomeScreen(signals)
+                    }
                     composable(Route.Signals.route) {
                         SignalListScreen(signals) { signal ->
                             navController.navigate(Route.SignalDetail.createRoute(signal.id))
                         }
                     }
                     composable(Route.Settings.route) {
-                        // SettingsScreen-ə bazanı təmizləmək üçün DAO-nu ötürə bilərik
-                        SettingsScreen()
+                        SettingsScreen(onClearHistory = { viewModel.clearHistory() })
                     }
                     composable(Route.SignalDetail.route) { backStackEntry ->
                         val signalId = backStackEntry.arguments?.getString("signalId")

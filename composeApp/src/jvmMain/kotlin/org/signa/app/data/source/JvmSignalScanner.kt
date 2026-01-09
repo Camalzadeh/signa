@@ -1,14 +1,18 @@
 package org.signa.app.data.source
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import org.signa.app.domain.model.Signal
 import org.signa.app.domain.model.SignalPoint
 import org.signa.app.domain.model.SignalType
 import java.io.BufferedReader
 import java.io.InputStreamReader
-
+import java.time.Clock
+import java.time.ZoneId
 class JvmSignalScanner : SignalScanner {
     override fun startScanning(): Flow<List<Signal>> = flow {
         while (true) {
@@ -18,12 +22,16 @@ class JvmSignalScanner : SignalScanner {
             if (os.contains("win")) {
                 signals.addAll(scanWindowsWifi())
             }
-            // Qeyd: macOS və Linux üçün əlavə əmrlər (airport, nmcli) bura əlavə oluna bilər
+
+
+            if (signals.isEmpty()) {
+                signals.add(createSignal("Test_Mock_Network", "00:11:22:33:44:55", -45))
+            }
 
             emit(signals)
-            delay(10000) // 10 saniyədən bir skan et
+            delay(5000)
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     private fun scanWindowsWifi(): List<Signal> {
         val signals = mutableListOf<Signal>()
@@ -34,45 +42,50 @@ class JvmSignalScanner : SignalScanner {
 
             var currentSsid = ""
             var currentBssid = ""
-            var currentSignalStrength = 0
-            var currentType = ""
 
             while (reader.readLine().also { line = it } != null) {
                 val trimmed = line?.trim() ?: ""
+
                 when {
                     trimmed.startsWith("SSID") -> {
                         currentSsid = trimmed.substringAfter(":").trim()
+                        if (currentSsid.isEmpty()) currentSsid = "Hidden Network"
                     }
+
                     trimmed.startsWith("BSSID") -> {
                         currentBssid = trimmed.substringAfter(":").trim()
                     }
-                    trimmed.startsWith("org.signa.app.domain.model.Signal") -> {
-                        val percentage = trimmed.substringAfter(":").trim().removeSuffix("%").toIntOrNull() ?: 0
-                        // Faizdən dBm-ə çevirmə: dBm = (percentage / 2) - 100
-                        currentSignalStrength = (percentage / 2) - 100
+
+                    trimmed.startsWith("Signal") -> {
+                        val percentage = trimmed.substringAfter(":").trim()
+                            .removeSuffix("%").toIntOrNull() ?: 0
+                        val dbm = (percentage / 2) - 100
 
                         if (currentBssid.isNotEmpty()) {
-                            signals.add(createSignal(currentSsid, currentBssid, currentSignalStrength))
+                            signals.add(createSignal(currentSsid, currentBssid, dbm))
+                            currentBssid = ""
                         }
                     }
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            println("SCAN_ERROR: ${e.message}")
         }
         return signals
     }
-
     private fun createSignal(name: String, id: String, strength: Int): Signal {
+        val now = System.currentTimeMillis()
         return Signal(
             id = id,
             name = name.ifBlank { "Unknown Network" },
             type = SignalType.WIFI,
             strength = strength,
             macAddress = id,
-            timestamp = System.currentTimeMillis(),
-            isSuspicious = strength > -30,
-            history = listOf(SignalPoint(System.currentTimeMillis(), strength))
+            timestamp = now,
+            firstSeen = now,
+            lastSeen = now,
+            isSuspicious = strength > -25,
+            history = listOf(SignalPoint(now, strength))
         )
     }
 }

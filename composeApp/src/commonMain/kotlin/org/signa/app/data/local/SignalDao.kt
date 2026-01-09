@@ -17,4 +17,13 @@ interface SignalDao {
 
     @Query("SELECT * FROM signals WHERE id = :id")
     suspend fun getSignalById(id: String): SignalEntity?
+
+    @Query("DELETE FROM signals")
+    suspend fun deleteAllSignals()
+
+    @Query("DELETE FROM signals WHERE id = :id")
+    suspend fun deleteSignalById(id: String)
+
+    @Query("SELECT * FROM signals WHERE id = :id")
+    fun getSignalByIdFlow(id: String): Flow<SignalEntity?>
 }

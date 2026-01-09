@@ -120,7 +120,6 @@ class AndroidSignalScanner(
         val cellInfos = telephonyManager.allCellInfo ?: return emptyList()
 
         return cellInfos.map { info ->
-            // ID təyini zamanı 5G-ni yalnız API 29+ üçün yoxlayırıq
             val id = when {
                 android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && info is CellInfoNr -> {
                     "5G-${info.hashCode()}"
@@ -131,7 +130,6 @@ class AndroidSignalScanner(
             }
 
             val dbm = when {
-                // 5G gücünü yalnız API 29+ cihazlarda oxuyuruq
                 android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && info is CellInfoNr -> {
                     info.cellSignalStrength.dbm
                 }

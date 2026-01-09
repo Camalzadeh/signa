@@ -25,14 +25,13 @@ class GeminiAiService(
                 prettyPrint = true
             })
         }
-        // LOGLARI AKTIVLƏŞDIRIRIK
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {
                     println("KTOR_LOG: $message")
                 }
             }
-            level = LogLevel.ALL // Bütün detalları (URL, Headers, Body) göstər
+            level = LogLevel.ALL
         }
     }
 
@@ -99,7 +98,7 @@ class GeminiAiService(
             }
         } catch (e: Exception) {
             println("AI_EXCEPTION: ${e.message}")
-            e.printStackTrace() // Bütün xəta zəncirini görək
+            e.printStackTrace()
             Result.Error(DataError.UNKNOWN)
         }
     }

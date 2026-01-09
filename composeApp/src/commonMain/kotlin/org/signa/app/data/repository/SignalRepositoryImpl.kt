@@ -5,18 +5,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.signa.app.data.local.SignalDao
-import org.signa.app.data.local.SignalEntity
+import org.signa.app.data.mapper.toDomain
+import org.signa.app.data.mapper.toEntity
 import org.signa.app.data.source.SignalScanner
 import org.signa.app.domain.model.Signal
-import org.signa.app.domain.model.SignalPoint
-import org.signa.app.domain.model.SignalType
 import org.signa.app.domain.repository.SignalRepository
-import org.signa.app.domain.util.Result
-import org.signa.app.domain.util.DataError
 
 class SignalRepositoryImpl(
-    private val scanner: SignalScanner,
-    private val dao: SignalDao
+    private val signalDao: SignalDao,
+    private val scanner: SignalScanner
 ) : SignalRepository {
 
     private val _signals = MutableStateFlow<List<Signal>>(emptyList())
@@ -24,65 +21,55 @@ class SignalRepositoryImpl(
 
     init {
         scope.launch {
-            dao.getAllSignals().first().let { entities ->
+            signalDao.getAllSignalsFlow().firstOrNull()?.let { entities ->
                 _signals.value = entities.map { it.toDomain() }
             }
+        }
+    }
 
-            scanner.startScanning().collect { newSignals ->
-                val currentMap = _signals.value.associateBy { it.id }.toMutableMap()
+    override fun getAllSignals(): Flow<List<Signal>> = _signals.asStateFlow()
 
-                newSignals.forEach { newSignal ->
-                    dao.insertSignal(newSignal.toEntity())
+    override suspend fun scanAndSaveSignals() {
+        scanner.startScanning()
+            .onEach { incomingSignals ->
+                val currentList = _signals.value.toMutableList()
 
-                    val existing = currentMap[newSignal.id]
-                    if (existing != null) {
+                incomingSignals.forEach { newSignal ->
+                    val index = currentList.indexOfFirst { it.id == newSignal.id }
+                    if (index != -1) {
+                        val existing = currentList[index]
                         val updatedHistory = (existing.history + newSignal.history).takeLast(100)
-                        currentMap[newSignal.id] = newSignal.copy(
+                        currentList[index] = newSignal.copy(
                             firstSeen = existing.firstSeen,
                             history = updatedHistory
                         )
                     } else {
-                        currentMap[newSignal.id] = newSignal
+                        currentList.add(newSignal)
+                    }
+
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            val signalToSave = currentList.find { it.id == newSignal.id }
+                            signalToSave?.let {
+                                signalDao.upsertSignal(it.toEntity())
+                            }
+                        } catch (e: Exception) {
+                            println("DB_SAVE_ERROR: ${e.message}")
+                        }
                     }
                 }
 
-                _signals.value = currentMap.values.sortedByDescending { it.timestamp }
+                _signals.value = currentList.sortedByDescending { it.timestamp }
             }
-        }
+            .collect()
     }
-
-    override fun getSignals(): Flow<List<Signal>> = _signals
 
     override fun getSignal(id: String): Flow<Signal?> {
-        return getSignals().map { signals ->
-            signals.find { it.id == id }
-        }
+        return _signals.map { list -> list.find { it.id == id } }
     }
 
-    override suspend fun startScanning(): Result<Unit, DataError> {
-        return Result.Success(Unit)
-    }
-
-    override suspend fun stopScanning() {
+    override suspend fun clearAllSignals() {
+        signalDao.deleteAllSignals()
+        _signals.value = emptyList()
     }
 }
-
-fun Signal.toEntity(): SignalEntity = SignalEntity(
-    id = this.id,
-    name = this.name,
-    type = this.type.name,
-    strength = this.strength,
-    timestamp = this.timestamp,
-    isSuspicious = this.isSuspicious
-)
-
-fun SignalEntity.toDomain(): Signal = Signal(
-    id = this.id,
-    name = this.name,
-    type = try { SignalType.valueOf(this.type) } catch (e: Exception) { SignalType.OTHER },
-    strength = this.strength,
-    timestamp = this.timestamp,
-    isSuspicious = this.isSuspicious,
-    macAddress = this.id,
-    history = listOf(SignalPoint(this.timestamp, this.strength))
-)
