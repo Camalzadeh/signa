@@ -4,7 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.signa.app.data.local.SignalDao
+import org.signa.app.data.dao.SignalDao
 import org.signa.app.data.mapper.toDomain
 import org.signa.app.data.mapper.toEntity
 import org.signa.app.data.source.SignalScanner

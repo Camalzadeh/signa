@@ -1,4 +1,4 @@
-package org.signa.app.data.local
+package org.signa.app.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

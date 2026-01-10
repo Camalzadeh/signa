@@ -3,12 +3,6 @@ package org.signa.app.domain.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class SignalType { WIFI, BLUETOOTH, CELLULAR, OTHER }
-
-@Serializable
-data class SignalPoint(val timestamp: Long, val strength: Int)
-
-@Serializable
 data class Signal(
     val id: String,
     val type: SignalType,

@@ -1,12 +1,12 @@
 package org.signa.app.data.mapper
 
-import org.signa.app.data.local.SignalEntity
-import org.signa.app.domain.model.Signal
+import org.signa.app.data.entity.SignalEntity as SignalEntity
+import org.signa.app.domain.model.Signal as SignalModel
 import org.signa.app.domain.model.SignalType
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-fun Signal.toEntity(): SignalEntity = SignalEntity(
+fun SignalModel.toEntity(): SignalEntity = SignalEntity(
     id = id,
     type = type.name,
     name = name,
@@ -22,7 +22,7 @@ fun Signal.toEntity(): SignalEntity = SignalEntity(
     rawDataJson = Json.encodeToString(rawData)
 )
 
-fun SignalEntity.toDomain(): Signal = Signal(
+fun SignalEntity.toDomain(): SignalModel = SignalModel(
     id = id,
     type = SignalType.valueOf(type),
     name = name,
