@@ -69,7 +69,7 @@ jobs:
 
       - name: Build Android APK
         if: matrix.os == 'ubuntu-latest'
-        run: ./gradlew :composeApp:assembleDebug --build-cache
+        run: ./gradlew :composeApp:assembleRelease --build-cache
 
       - name: Build Desktop Distribution
         run: ./gradlew :composeApp:packageDistributionForCurrentOS --build-cache
@@ -81,7 +81,7 @@ jobs:
           make_latest: true
           fail_on_unmatched_files: false
           files: |
-            composeApp/build/outputs/apk/debug/*.apk
+            composeApp/build/outputs/apk/release/*.apk
             composeApp/build/compose/binaries/main/dmg/*.dmg
             composeApp/build/compose/binaries/main/msi/*.msi
             composeApp/build/compose/binaries/main/deb/*.deb

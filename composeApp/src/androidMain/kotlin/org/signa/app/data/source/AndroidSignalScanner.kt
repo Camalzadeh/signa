@@ -90,7 +90,7 @@ class AndroidSignalScanner(
         ) return emptyList()
         return wifiManager.scanResults.map { res ->
             val ssid = if (android.os.Build.VERSION.SDK_INT >= 33) {
-                res.wifiSsid?.toString() ?: "Unknown WiFi"
+                res.wifiSsid?.toString()?.ifEmpty { "Unknown WiFi" } ?: "Unknown WiFi"
             } else {
                 @Suppress("DEPRECATION")
                 res.SSID.ifEmpty { "Unknown WiFi" }
