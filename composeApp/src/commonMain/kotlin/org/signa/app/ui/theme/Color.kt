@@ -1,4 +1,4 @@
-package org.signa.app.presentation.theme
+package org.signa.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
