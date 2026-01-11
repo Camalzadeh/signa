@@ -17,44 +17,45 @@ class SignalRepositoryImpl(
 ) : SignalRepository {
 
     private val _signals = MutableStateFlow<List<Signal>>(emptyList())
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(Dispatchers.IO)
 
+    init {
+        scope.launch {
+            val initialSignals = signalDao.getAllSignalsFlow().first().map { it.toDomain() }
+            _signals.value = initialSignals
+        }
+    }
 
     override fun getAllSignals(): Flow<List<Signal>> = _signals.asStateFlow()
 
     override suspend fun scanAndSaveSignals() {
-        scanner.startScanning()
-            .onEach { incomingSignals ->
-                val currentList = _signals.value.toMutableList()
+        scanner.startScanning().collect { incomingSignals ->
+            val currentList = _signals.value.toMutableList()
 
-                incomingSignals.forEach { newSignal ->
-                    val index = currentList.indexOfFirst { it.id == newSignal.id }
-                    if (index != -1) {
-                        val existing = currentList[index]
-                        val updatedHistory = (existing.history + newSignal.history).takeLast(100)
-                        currentList[index] = newSignal.copy(
-                            firstSeen = existing.firstSeen,
-                            history = updatedHistory
-                        )
-                    } else {
-                        currentList.add(newSignal)
-                    }
+            incomingSignals.forEach { newSignal ->
+                val index = currentList.indexOfFirst { it.id == newSignal.id }
 
-                    scope.launch(Dispatchers.IO) {
-                        try {
-                            val signalToSave = currentList.find { it.id == newSignal.id }
-                            signalToSave?.let {
-                                signalDao.upsertSignal(it.toEntity())
-                            }
-                        } catch (e: Exception) {
-                            println("DB_SAVE_ERROR: ${e.message}")
-                        }
-                    }
+                val signalToSave = if (index != -1) {
+                    val existing = currentList[index]
+                    val updatedHistory = (existing.history + newSignal.history).takeLast(100)
+                    newSignal.copy(
+                        firstSeen = existing.firstSeen,
+                        history = updatedHistory
+                    )
+                } else {
+                    newSignal
                 }
 
-                _signals.value = currentList.sortedByDescending { it.timestamp }
+                if (index != -1) currentList[index] = signalToSave
+                else currentList.add(signalToSave)
+
+                scope.launch {
+                    signalDao.upsertSignal(signalToSave.toEntity())
+                }
             }
-            .collect()
+
+            _signals.value = currentList.sortedByDescending { it.strength }
+        }
     }
 
     override fun getSignalById(id: String): Flow<Signal?> {
