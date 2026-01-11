@@ -1,10 +1,9 @@
 package org.signa.app.data.source
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import android.content.Context
+import org.koin.java.KoinJavaComponent.getKoin
 
-@Composable
 actual fun getPlatformScanner(): SignalScanner {
-    val context = LocalContext.current
+    val context = getKoin().get<Context>()
     return AndroidSignalScanner(context)
 }
