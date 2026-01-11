@@ -145,15 +145,15 @@ compose.desktop {
             packageVersion = "1.0.0"
 
             windows {
-                iconFile.set(project.file("src/jwmMain/resources/logo.ico"))
+                iconFile.set(project.file("src/jvmMain/resources/logo.ico"))
             }
 
             macOS {
-                iconFile.set(project.file("src/jwmMain/resources/logo.icns"))
+                iconFile.set(project.file("src/jvmMain/resources/logo.icns"))
             }
 
             linux {
-                iconFile.set(project.file("src/jwmMain/resources/logo.png"))
+                iconFile.set(project.file("src/jvmMain/resources/logo.png"))
             }
         }
 
