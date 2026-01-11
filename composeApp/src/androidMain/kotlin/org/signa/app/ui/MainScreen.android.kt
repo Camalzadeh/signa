@@ -1,5 +1,7 @@
-package org.signa.app.presentation
+package org.signa.app.ui
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -8,8 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import org.signa.app.presentation.theme.GraphColors
+import org.signa.app.ui.theme.GraphColors
 
+@RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 actual fun PermissionGate(onPermissionsGranted: @Composable () -> Unit) {

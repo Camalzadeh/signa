@@ -1,4 +1,4 @@
-package org.signa.app.presentation
+package org.signa.app.ui
 
 import androidx.compose.runtime.Composable
 
