@@ -28,6 +28,7 @@ kotlin {
             implementation(libs.generativeai)
             implementation(libs.accompanist.permissions)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.koin.android)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -52,6 +53,10 @@ kotlin {
             implementation(libs.markdown.renderer)
 
             implementation(compose.materialIconsExtended)
+
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -95,7 +100,7 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     buildFeatures {
-        buildConfig = true
+        buildConfig = false
     }
 
     defaultConfig {
@@ -105,7 +110,6 @@ android {
         versionCode = 1
         versionName = "1.0"
         
-        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
     }
     packaging {
         resources {
