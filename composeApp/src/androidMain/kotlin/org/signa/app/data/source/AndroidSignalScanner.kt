@@ -35,7 +35,12 @@ class AndroidSignalScanner(
                         getWifiSignals().forEach { signalsMap[it.id] = it }
                     }
                     BluetoothDevice.ACTION_FOUND -> {
-                        val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                        val device = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                        }
                         val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, -100).toInt()
                         device?.let {
                             val s = createBluetoothSignal(it, rssi)
@@ -55,6 +60,7 @@ class AndroidSignalScanner(
 
         val scannerJob = launch {
             while (isActive) {
+                @Suppress("DEPRECATION")
                 wifiManager.startScan()
 
                 if (bluetoothAdapter?.isDiscovering == true) bluetoothAdapter.cancelDiscovery()
@@ -83,10 +89,16 @@ class AndroidSignalScanner(
             ) != PackageManager.PERMISSION_GRANTED
         ) return emptyList()
         return wifiManager.scanResults.map { res ->
+            val ssid = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                res.wifiSsid?.toString() ?: "Unknown WiFi"
+            } else {
+                @Suppress("DEPRECATION")
+                res.SSID.ifEmpty { "Unknown WiFi" }
+            }
             Signal(
                 id = res.BSSID,
                 type = SignalType.WIFI,
-                name = res.SSID.ifBlank { "Unknown WiFi" },
+                name = ssid,
                 strength = res.level,
                 macAddress = res.BSSID,
                 frequency = "${res.frequency} MHz",

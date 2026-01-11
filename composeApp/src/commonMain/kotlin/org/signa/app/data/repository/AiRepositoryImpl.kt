@@ -15,8 +15,10 @@ class AiRepositoryImpl(
     private val aiService: AiService
 ) : AiRepository {
 
-    override suspend fun getAnalysis(signal: Signal, forceRefresh: Boolean): Result<AiAnalysis, DataError> {
-        // 1. Əgər məcburi yeniləmə istənilmirsə, bazanı yoxla
+    override suspend fun getAnalysis(
+        signal: Signal,
+        forceRefresh: Boolean
+    ): Result<AiAnalysis, DataError> {
         if (!forceRefresh) {
             val cachedEntity = aiDao.getAnalysisForSignal(signal.id)
             if (cachedEntity != null) {
@@ -36,9 +38,11 @@ class AiRepositoryImpl(
                 aiDao.saveAnalysis(newAnalysis.toEntity())
                 Result.Success(newAnalysis)
             }
+
             is Result.Error -> Result.Error(apiResult.error)
         }
     }
+
     override suspend fun clearOldAnalyses() {
         aiDao.deleteAllAnalyses()
     }

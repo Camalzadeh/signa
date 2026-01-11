@@ -23,7 +23,6 @@ class AiAnalysisViewModel(
     val analysisState = _analysisState.asStateFlow()
 
     init {
-        // Ekran açılan kimi yalnız siqnalın detallarını (ad, güc və s.) gətiririk
         fetchSignalOnly()
     }
 
@@ -31,8 +30,6 @@ class AiAnalysisViewModel(
         viewModelScope.launch {
             val currentSignal = useCases.getSignalDetail(signalId).firstOrNull()
             _signal.value = currentSignal
-
-            // Əgər əvvəllər bu siqnal üçün analiz edilibsə, onu gətirək
             if (currentSignal != null) {
                 val cached = useCases.getAiAnalysis(currentSignal, forceRefresh = false)
                 if (cached is Result.Success) {
