@@ -19,13 +19,6 @@ class SignalRepositoryImpl(
     private val _signals = MutableStateFlow<List<Signal>>(emptyList())
     private val scope = CoroutineScope(Dispatchers.Default)
 
-    init {
-        scope.launch {
-            signalDao.getAllSignalsFlow().firstOrNull()?.let { entities ->
-                _signals.value = entities.map { it.toDomain() }
-            }
-        }
-    }
 
     override fun getAllSignals(): Flow<List<Signal>> = _signals.asStateFlow()
 
@@ -64,7 +57,7 @@ class SignalRepositoryImpl(
             .collect()
     }
 
-    override fun getSignal(id: String): Flow<Signal?> {
+    override fun getSignalById(id: String): Flow<Signal?> {
         return _signals.map { list -> list.find { it.id == id } }
     }
 

@@ -7,5 +7,5 @@ interface SignalRepository {
     fun getAllSignals(): Flow<List<Signal>>
     suspend fun scanAndSaveSignals()
     suspend fun clearAllSignals()
-    fun getSignal(id: String): Flow<Signal?>
+    fun getSignalById(id: String): Flow<Signal?>
 }

@@ -1,4 +1,4 @@
-package org.signa.app.presentation.viewmodel
+package org.signa.app.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,13 +7,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.signa.app.domain.model.Signal
-import org.signa.app.domain.repository.SignalRepository
+import org.signa.app.domain.usecase.UseCases
+
 
 class SignalViewModel(
-    private val repository: SignalRepository
+    private val useCases: UseCases
 ) : ViewModel() {
 
-    val signals: StateFlow<List<Signal>> = repository.getAllSignals()
+    val signals: StateFlow<List<Signal>> = useCases.getSignals()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -21,15 +22,16 @@ class SignalViewModel(
         )
 
     init {
+        // ViewModel yaradılan kimi skaneri işə salırıq
         viewModelScope.launch {
-            println("DEBUG: ViewModel skan prosesini tetiklədi")
-            repository.scanAndSaveSignals()
+            println("DEBUG: Skaner prosesi başladıldı...")
+            useCases.scanSignals()
         }
     }
 
     fun clearHistory() {
         viewModelScope.launch {
-            repository.clearAllSignals()
+            useCases.clearSignals()
         }
     }
 }
