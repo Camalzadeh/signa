@@ -63,8 +63,8 @@ class AndroidSignalScanner(
                 @Suppress("DEPRECATION")
                 wifiManager.startScan()
 
-                if (bluetoothAdapter?.isDiscovering == true) bluetoothAdapter.cancelDiscovery()
-                bluetoothAdapter?.startDiscovery()
+//                if (bluetoothAdapter?.isDiscovering == true) bluetoothAdapter.cancelDiscovery()
+//                bluetoothAdapter?.startDiscovery()
 
                 getCellSignals().forEach { signalsMap[it.id] = it }
 
