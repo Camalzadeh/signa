@@ -33,7 +33,6 @@ class GeminiAiService(
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {
-                    println("KTOR_LOG: $message")
                 }
             }
             level = LogLevel.ALL
@@ -42,7 +41,6 @@ class GeminiAiService(
 
     override suspend fun analyzeSignals(signals: List<Signal>): Result<String, DataError> {
         if (apiKey.isBlank()) {
-            println("AI_ERROR: API Key boşdur!")
             return Result.Error(DataError.NO_INTERNET)
         }
 
@@ -68,7 +66,6 @@ class GeminiAiService(
 
             val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKey"
 
-            println("AI_INFO: Sorğu göndərilir: $url")
 
             val response: HttpResponse = client.post(url) {
                 contentType(ContentType.Application.Json)
@@ -86,7 +83,6 @@ class GeminiAiService(
             }
 
             val responseText = response.bodyAsText()
-            println("AI_RESPONSE_STATUS: ${response.status}")
 
             if (response.status.isSuccess()) {
                 val jsonResponse = Json.parseToJsonElement(responseText).jsonObject
@@ -98,7 +94,6 @@ class GeminiAiService(
 
                 Result.Success(text)
             } else {
-                println("AI_SERVER_ERROR: $responseText")
                 Result.Error(DataError.SERVER_ERROR)
             }
         } catch (e: Exception) {

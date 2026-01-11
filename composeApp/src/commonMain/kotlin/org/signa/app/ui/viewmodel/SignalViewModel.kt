@@ -23,7 +23,6 @@ class SignalViewModel(
 
     init {
         viewModelScope.launch {
-            println("DEBUG: Skaner prosesi başladıldı...")
             useCases.scanSignals()
         }
     }
