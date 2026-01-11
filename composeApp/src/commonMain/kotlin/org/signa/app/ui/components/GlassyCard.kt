@@ -1,4 +1,4 @@
-package org.signa.app.presentation.components
+package org.signa.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import org.signa.app.presentation.theme.GraphColors
+import org.signa.app.ui.theme.GraphColors
 
 @Composable
 fun GlassyCard(

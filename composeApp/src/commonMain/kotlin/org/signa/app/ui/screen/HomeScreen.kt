@@ -1,4 +1,4 @@
-package org.signa.app.presentation.screen
+package org.signa.app.ui.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,8 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.signa.app.domain.model.Signal
-import org.signa.app.presentation.theme.GraphColors
-import org.signa.app.presentation.components.SignalRadar
+import org.signa.app.ui.theme.GraphColors
+import org.signa.app.ui.components.SignalRadar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

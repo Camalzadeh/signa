@@ -1,4 +1,4 @@
-package org.signa.app.presentation.screen
+package org.signa.app.ui.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -8,28 +8,30 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.signa.app.presentation.theme.GraphColors
-import org.signa.app.presentation.components.AppFooter
+import org.signa.app.ui.theme.GraphColors
+import org.signa.app.ui.components.AppFooter
 
 @Composable
 expect fun PermissionStatusSection()
 
 @Composable
 fun SettingsScreen(
-    onClearHistory: () -> Unit
+    onClearHistory: () -> Unit,
+    onClearAnalyses: ()-> Unit
 ) {
-    var showDialog by remember { mutableStateOf(false) }
+    var showDialogForHistory by remember { mutableStateOf(false) }
+    var showDialogForAnalyses by remember { mutableStateOf(false) }
 
-    if (showDialog) {
+    if (showDialogForHistory) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { showDialogForHistory = false },
             title = { Text("Clear History") },
             text = { Text("Are you sure you want to delete all saved signals? This action cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         onClearHistory()
-                        showDialog = false
+                        showDialogForHistory = false
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
@@ -37,7 +39,30 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
+                TextButton(onClick = { showDialogForHistory = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    if(showDialogForAnalyses) {
+        AlertDialog(
+            onDismissRequest = { showDialogForAnalyses = false },
+            title = { Text("Clear AI Analyses") },
+            text = { Text("Are you sure you want to delete all AI analyses? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onClearAnalyses()
+                        showDialogForAnalyses = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete All")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialogForAnalyses = false }) {
                     Text("Cancel")
                 }
             }
@@ -74,7 +99,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { showDialog = true },
+            onClick = { showDialogForHistory = true },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
                 contentColor = MaterialTheme.colorScheme.error
@@ -84,6 +109,21 @@ fun SettingsScreen(
             Icon(Icons.Default.Delete, contentDescription = null)
             Spacer(Modifier.width(8.dp))
             Text("Clear All Saved Signals")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = { showDialogForAnalyses = true },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                contentColor = MaterialTheme.colorScheme.error
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Delete, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Clear All AI Analyses")
         }
 
         Spacer(modifier = Modifier.weight(1f))
