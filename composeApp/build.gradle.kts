@@ -143,7 +143,20 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "org.signa.app"
             packageVersion = "1.0.0"
+
+            windows {
+                iconFile.set(project.file("src/jwmMain/resources/logo.ico"))
+            }
+
+            macOS {
+                iconFile.set(project.file("src/jwmMain/resources/logo.icns"))
+            }
+
+            linux {
+                iconFile.set(project.file("src/jwmMain/resources/logo.png"))
+            }
         }
+
     }
 }
 
