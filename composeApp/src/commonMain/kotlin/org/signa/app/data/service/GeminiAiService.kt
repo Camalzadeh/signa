@@ -1,17 +1,17 @@
 package org.signa.app.data.service
 
 import io.ktor.client.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.* // Əlavə edildi
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.*
 import org.signa.app.domain.model.Signal
-import org.signa.app.domain.service.AiService
-import org.signa.app.domain.util.Result
-import org.signa.app.domain.util.DataError
+import org.signa.app.domain.core.Result
+import org.signa.app.domain.core.DataError
 
 class GeminiAiService(
     private val apiKey: String,
@@ -19,6 +19,11 @@ class GeminiAiService(
 ) : AiService {
 
     private val client = HttpClient {
+        install(HttpTimeout){
+            requestTimeoutMillis = 60000
+            connectTimeoutMillis = 60000
+            socketTimeoutMillis = 60000
+        }
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
