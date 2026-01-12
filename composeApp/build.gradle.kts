@@ -142,7 +142,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.signa.app"
+            packageName = "Signa"
             packageVersion = "1.0.0"
 
             windows {
