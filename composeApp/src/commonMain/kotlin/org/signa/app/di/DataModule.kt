@@ -13,6 +13,8 @@ import org.signa.app.data.source.getPlatformScanner
 import org.signa.app.domain.repository.AiRepository
 import org.signa.app.domain.repository.SignalRepository
 
+private const val API_KEY = "AIzaSyBDyI6k6tHsvlAiZptwh4OY7OyJvxzNTaY"
+
 val dataModule = module {
     single {
         getDatabaseBuilder()
@@ -24,7 +26,8 @@ val dataModule = module {
     single { get<AppDatabase>().aiDao() }
 
     single { getPlatformScanner() }
-    single<AiService> { GeminiAiService(apiKey = BuildConfig.GEMINI_API_KEY) }
+//    single<AiService> { GeminiAiService(apiKey = BuildConfig.GEMINI_API_KEY) }
+    single<AiService> { GeminiAiService(apiKey = API_KEY) }
 
     single<SignalRepository> { SignalRepositoryImpl(get(), get()) }
     single<AiRepository> { AiRepositoryImpl(get(), get()) }

@@ -124,21 +124,33 @@ Signa follows **Clean Architecture** principles to maintain a separation of conc
    git clone https://github.com/Camalzadeh/signa.git
    ```
 2. Open in Android Studio or IntelliJ IDEA.
-3. Provide your Gemini API Key in `local.properties`.
-4. Build and run:
-   - **Android**: Run the `composeApp` module on an emulator or device.
-   - **Desktop**: Run the `run` task in the `composeApp` Gradle group.
+3. **No Setup Required**: For the convenience of the **KotlinConf Contest** judges, a demo **Gemini API Key** is already hardcoded in the `dataModule`. You do **not** need to configure `local.properties` to test the AI features.
+4. **Build and Run**:
+   - **Android**: Select the `composeApp` configuration and click **Run**.
+   - **Desktop**: Run the Gradle task: `./gradlew :composeApp:run`
+
+---
+
+## How to Use
+
+1. **Scan**: Upon launching, the app automatically begins scanning for nearby signals (WiFi/Bluetooth). Observe the real-time list of detected devices.
+2. **Select**: Tap any specific signal to open the **Detail View** and see its frequency and strength history.
+3. **Analyze**: In the Detail View, press the **"Analyze with Gemini"** button. The AI will process the signal data and generate a security report regarding potential risks.
+4. **History**: All scanned signals are automatically saved to the local **Room Database**, allowing you to review them even after restarting the app.
 
 ---
 
 ## Application Essay
 
-> [!NOTE]
-> For a detailed look into the philosophy and technical inner workings of Signa, please refer to our full essay:
-> **[Signa: Revolutionizing Signal Intelligence with Kotlin Multiplatform and AI](docs/essay.md)**
+> [!TIP]
+> This project was developed by **Humbat Jamalov** (Computer Science student at UFAZ) as a journey to master Kotlin Multiplatform while bridging the gap between Signal Processing and AI.
 
 ### Abstract
-In the rapidly evolving landscape of wireless communications, the ability to monitor, analyze, and secure our surrounding signal environment has become paramount. **Signa** is a cutting-edge, cross-platform application designed to provide users with real-time signal intelligence... *(Read more in the [full essay](docs/essay.md))*
+Signa was born from a fascination with invisible radio signals and the security risks they pose to our daily devices. By leveraging **Kotlin Multiplatform** and **Gemini AI**, this project transforms raw hardware data into actionable security intelligence. Whether it is identifying unauthorized access points or detecting suspicious trackers, Signa empowers users with real-time signal visibility and automated AI audits.
+
+For a detailed look into the developer's journey—from a Flutter/Django background to mastering KMP—and the future roadmap involving Fourier Transforms and secure messaging protocols, please refer to the full essay:
+
+**[Read the Full Essay: Bridging Signal Intelligence and AI](docs/essay.md)**
 
 ---
 
