@@ -47,10 +47,10 @@ Download the latest version of Signa for your platform:
 
 | Platform | Download Link |
 | :--- | :--- |
-| **Android** | [Download APK](https://github.com/Camalzadeh/signa/releases/download/v2026.01.11-2253/composeApp-release.apk) |
-| **Windows** | [Download EXE](https://github.com/Camalzadeh/signa/releases/download/v2026.01.11-2253/org.signa.app-1.0.0.msi) |
-| **macOS** | [Download DMG](https://github.com/Camalzadeh/signa/releases/download/v2026.01.11-2253/org.signa.app-1.0.0.dmg) |
-| **Linux** | [Download DEB](https://github.com/Camalzadeh/signa/releases/download/v2026.01.11-2253/org.signa.app_1.0.0-1_amd64.deb) |
+| **Android** | [Download APK](https://github.com/Camalzadeh/signa/releases/download/v2026.01.12-1635/composeApp-release.apk) |
+| **Windows** | [Download EXE](https://github.com/Camalzadeh/signa/releases/download/v2026.01.12-1635/org.signa.app-1.0.0.msi) |
+| **macOS** | [Download DMG](https://github.com/Camalzadeh/signa/releases/download/v2026.01.12-1635/org.signa.app-1.0.0.dmg) |
+| **Linux** | [Download DEB](https://github.com/Camalzadeh/signa/releases/download/v2026.01.12-1635/org.signa.app_1.0.0-1_amd64.deb) |
 
 > [!TIP]
 > You can find all versions and release notes in the [GitHub Releases](https://github.com/Camalzadeh/signa/releases) page.
